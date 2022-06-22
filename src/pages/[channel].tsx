@@ -9,6 +9,7 @@ import Entry from "../entry";
 export default function Home() {
   const router = useRouter();
   const channel = router.query.channel as string;
+  const transparent = !!router.query.transparent;
   const window = parseFloat((router.query.window as string) || "1");
 
   const [topTokens, setTopTokens] = useState<Record<string, number[]>>({});
@@ -21,12 +22,10 @@ export default function Home() {
     const connectPromise = client.connect();
 
     client.on("message", (channel, tags, message, self) => {
-      let matches = message.match(/\b(\w+)\b/g);
+      const matches = message.toLowerCase().match(/\b(\w+)\b/g);
       if (!matches) {
         return;
       }
-
-      matches = matches.map((m) => m.toLowerCase());
 
       const tokens = new Set(matches);
 
@@ -80,7 +79,14 @@ export default function Home() {
       <Head>
         <title>{channel}</title>
       </Head>
-      {/* <Heading>Kitboga Chat Tools thingy</Heading> */}
+
+      {transparent && (
+        <style jsx global>{`
+          body {
+            background-color: transparent;
+          }
+        `}</style>
+      )}
 
       <LayoutGroup>
         <Stack textAlign="center" py={16} spacing={16}>
