@@ -89,9 +89,25 @@ export default function Channel() {
   return (
     <Box h="100vh" overflow="hidden">
       <Head>
-        <title>
-          {channel ? `${channel} | Twitch Chat Vote` : "Twitch Chat Vote"}
-        </title>
+        <title key="title">Twitch Chat Vote</title>
+        <meta
+          key="description"
+          name="description"
+          content="Let the chat decide."
+        />
+      </Head>
+
+      <Head>
+        {channel && (
+          <>
+            <title key="title">{channel} - Twitch Chat Vote</title>
+            <meta
+              key="description"
+              name="description"
+              content={`Let ${channel}'s chat decide.`}
+            />
+          </>
+        )}
       </Head>
 
       {transparent && (

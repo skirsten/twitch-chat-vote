@@ -45,6 +45,7 @@ export default function Home() {
     <Container maxW="container.md">
       <Head>
         <title>Twitch Chat Vote</title>
+        <meta name="description" content="Let the chat decide." />
       </Head>
       <Stack py={6} spacing={6}>
         <HStack>
