@@ -1,10 +1,9 @@
 import { motion, transform, useAnimation } from "framer-motion";
 import { useEffect, useRef } from "react";
 
-const max = 10;
-
-const mapHypeToColor = transform([-1, 2 * max], ["#ccc", "#ff008c"]);
-const mapHypeToSpringVelocity = transform([0, max], [0, 50]);
+const mapHypeToColor = transform([-1, 20], ["#ccc", "#ff008c"]);
+const mapHypeToSpringVelocity = transform([0, 10], [0, 40]);
+const mapScale = transform([1, 10], [1, 5]);
 
 type EntryProps = {
   hype: number;
@@ -18,11 +17,11 @@ export default function Entry(props: EntryProps) {
   const oldHype = useRef(0);
 
   useEffect(() => {
-    const hype = Math.min(props.hype, max);
+    const scale = mapScale(props.hype);
 
     if (props.hype > oldHype.current) {
       controls.start({
-        scale: hype,
+        scale,
         transition: {
           type: "spring",
           velocity: mapHypeToSpringVelocity(props.hype),
@@ -32,7 +31,7 @@ export default function Entry(props: EntryProps) {
       });
     } else {
       controls.start({
-        scale: hype,
+        scale,
       });
     }
 
