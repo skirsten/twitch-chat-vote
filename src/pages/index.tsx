@@ -18,11 +18,15 @@ import {
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FormEventHandler } from "react";
+import { FormEventHandler, useEffect } from "react";
 import { GitHubIcon } from "../icons";
 
 export default function Home() {
   const router = useRouter();
+
+  useEffect(() => {
+    router.prefetch("/[channel]");
+  }, []);
 
   const onFormSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
