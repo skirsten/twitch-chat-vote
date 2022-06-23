@@ -2,6 +2,7 @@ import { ArrowForwardIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
+  Code,
   Container,
   FormControl,
   FormHelperText,
@@ -32,16 +33,30 @@ export default function Home() {
     event.preventDefault();
 
     const target = event.target as typeof event.target & {
-      elements: { channel: { value: string }; window: { value: string } };
+      elements: Record<
+        "channel" | "window" | "cooldown" | "filter",
+        { value: string }
+      >;
       reset: () => void;
     };
 
     const channel = target.elements.channel.value;
-    const window = target.elements.window.value;
+    const window = parseFloat(target.elements.window.value);
+    const cooldown = parseFloat(target.elements.cooldown.value);
+    const filter = [
+      ...new Set(
+        target.elements.filter.value.toLowerCase().match(/\b(\w+)\b/g)
+      ),
+    ].join(",");
 
     router.push({
       pathname: "/[channel]",
-      query: { channel, window },
+      query: {
+        channel,
+        ...(window !== 3 && { window }),
+        ...(cooldown && { cooldown }),
+        ...(filter && { filter }),
+      },
     });
   };
 
@@ -72,7 +87,7 @@ export default function Home() {
           <Stack py={6} spacing={6}>
             <FormControl isRequired>
               <FormLabel htmlFor="channel">Twitch channel</FormLabel>
-              <Input id="channel" type="text" />
+              <Input id="channel" type="text" placeholder="e.g. kitboga" />
             </FormControl>
 
             <FormControl isRequired>
@@ -88,6 +103,32 @@ export default function Home() {
                 How long each individual message is counted. Decimals are also
                 supported.
               </FormHelperText>
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel htmlFor="cooldown">User cooldown in seconds</FormLabel>
+              <Input
+                id="cooldown"
+                type="number"
+                defaultValue={0}
+                min={0}
+                step={0.1}
+              />
+              <FormHelperText>
+                How long to cool down per user. During this period the user{"'"}
+                s messages are ignored. <Code>0</Code> is effectively off. Input
+                a huge number like <Code>9999999999</Code> to allow only one
+                vote per user.
+              </FormHelperText>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel htmlFor="filter">Filter words</FormLabel>
+              <Input
+                id="filter"
+                type="text"
+                placeholder="e.g. yes no why what"
+              />
             </FormControl>
 
             <HStack>

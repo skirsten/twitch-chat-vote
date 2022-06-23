@@ -6,26 +6,36 @@ import {
   Text,
   useBoolean,
 } from "@chakra-ui/react";
-import { AnimatePresence, LayoutGroup } from "framer-motion";
+import { LayoutGroup } from "framer-motion";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import tmi from "tmi.js";
 import Entry from "../entry";
 
 export default function Channel() {
   const router = useRouter();
-  const channel = router.query.channel as string;
-  const transparent = !!router.query.transparent;
-  const window = parseFloat((router.query.window as string) || "1");
+
+  const params = {
+    channel: router.query.channel as string,
+    transparent: !!router.query.transparent,
+    filter: router.query.filter as string | undefined,
+    window: (router.query.window as string | undefined) || "3",
+    cooldown: (router.query.cooldown as string | undefined) || "0",
+  };
 
   const [isLoaded, setLoaded] = useBoolean();
   const [topTokens, setTopTokens] = useState<Record<string, number[]>>({});
+  const userCooldown = useRef<Record<string, number>>({});
 
   useEffect(() => {
     const client = new tmi.Client({
-      channels: [channel],
+      channels: [params.channel],
     });
+    const cooldown = parseFloat(params.cooldown);
+    const filter = params.filter
+      ? new Set(params.filter.split(","))
+      : undefined;
 
     const connectPromise = client.connect();
 
@@ -34,12 +44,29 @@ export default function Channel() {
     });
 
     client.on("message", (channel, tags, message, self) => {
+      if (cooldown) {
+        const now = Date.now();
+        const userId = tags["user-id"];
+        if (!userId) return;
+
+        if (
+          userCooldown.current[userId] &&
+          userCooldown.current[userId] + cooldown * 1000 > now
+        ) {
+          return;
+        }
+
+        userCooldown.current[userId] = now;
+      }
+
       const matches = message.toLowerCase().match(/\b(\w+)\b/g);
       if (!matches) {
         return;
       }
 
-      const tokens = new Set(matches);
+      const tokens = new Set(
+        filter ? matches.filter((match) => filter.has(match)) : matches
+      );
 
       if (tokens.size) {
         setTopTokens((topTokens) => {
@@ -58,11 +85,20 @@ export default function Channel() {
     return () => {
       connectPromise.then(() => client.disconnect());
     };
-  }, [channel]);
+  }, [params.channel, params.filter, params.cooldown, setLoaded]);
 
   useEffect(() => {
+    const cooldown = parseFloat(params.cooldown);
+    const window = parseFloat(params.window);
+
     const callback = () => {
       const now = Date.now();
+
+      userCooldown.current = Object.fromEntries(
+        Object.entries(userCooldown.current).filter(
+          ([user, ts]) => ts + cooldown * 1000 <= now
+        )
+      );
 
       setTopTokens((topTokens) =>
         Object.fromEntries(
@@ -79,7 +115,7 @@ export default function Channel() {
     const ticker = setInterval(callback, 100);
 
     return () => clearTimeout(ticker);
-  }, [window]);
+  }, [params.cooldown, params.window]);
 
   let sortedTopTokens = Object.entries(topTokens);
 
@@ -98,19 +134,19 @@ export default function Channel() {
       </Head>
 
       <Head>
-        {channel && (
+        {params.channel && (
           <>
-            <title key="title">{channel} - Twitch Chat Vote</title>
+            <title key="title">{params.channel} - Twitch Chat Vote</title>
             <meta
               key="description"
               name="description"
-              content={`Let ${channel}'s chat decide.`}
+              content={`Let ${params.channel}'s chat decide.`}
             />
           </>
         )}
       </Head>
 
-      {transparent && (
+      {params.transparent && (
         <style jsx global>{`
           body {
             background-color: transparent;
